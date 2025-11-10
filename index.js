@@ -8,8 +8,7 @@ require("dotenv").config();
 app.use(cors()); // <-- allow all origins
 app.use(express.json());
 
-const uri =
-  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iesbwy6.mongodb.net/?appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iesbwy6.mongodb.net/?appName=Cluster0`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -29,6 +28,7 @@ async function run() {
     const db = client.db("onlineLearningDb");
     const popularCollection = db.collection("Popular");
     const allCourseCollection = db.collection("allCourses");
+    const enrolledCollection = db.collection("enrolledCourses");
     app.get("/popular", async (req, res) => {
       const result = await popularCollection.find().toArray();
       res.send(result);
@@ -65,6 +65,49 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    // DELETE /courses/:id
+    app.delete("/courses/:id", async (req, res) => {
+      const courseId = req.params.id;
+      try {
+        const result = await allCourseCollection.deleteOne({
+          _id: new ObjectId(courseId),
+        });
+        if (result.deletedCount === 1) {
+          res.status(200).json({ message: "Course deleted successfully" });
+        } else {
+          res.status(404).json({ message: "Course not found" });
+        }
+      } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
+    //UPdated course
+    // 🟣 Update Course (only if email matches)
+    app.put("/courses/:id", async (req, res) => {
+      const { id } = req.params;
+      const data = req.body;
+      const query = { _id: new ObjectId(id) };
+      const update = {
+        $set: data,
+      };
+      const result = allCourseCollection.updateOne(query, update);
+
+      res.send(result);
+    });
+
+    //Enroll courses here
+    app.post("/my-enroll", async (req, res) => {
+      const data = req.body;
+      console.log(data);
+      const result = await enrolledCollection.insertOne(data);
+      res.send(result);
+    });
+    app.get("/my-enroll", async (req, res) => {
+      const result = await enrolledCollection.find().toArray();
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
