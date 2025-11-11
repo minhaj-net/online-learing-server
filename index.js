@@ -75,7 +75,7 @@ async function run() {
         if (result.deletedCount === 1) {
           res.status(200).json({ message: "Course deleted successfully" });
         } else {
-          res.status(404).json({ message: "Course not found" });
+          res.status(404).json({ message: "Course not found 404" });
         }
       } catch (error) {
         res.status(500).json({ message: "Internal server error" });
