@@ -8,6 +8,26 @@ require("dotenv").config();
 app.use(cors()); // <-- allow all origins
 app.use(express.json());
 
+const verifyForebaseToken = async (req, res, next) => {
+  // console.log("In the verify middlewere:", req.headers.authorization);
+  if (!req.headers.authorization) {
+    return res.status(401).send({ message: "UnAuthorized acces" });
+  }
+  const token = req.headers.authorization.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ message: "UnAuthorized acces" });
+  }
+  // verify id token
+  try {
+    const tokenInfo = await admin.auth().verifyIdToken(token);
+    req.token_email = tokenInfo.email;
+    console.log(tokenInfo);
+    next();
+  } catch {
+    return res.status(401).send({ message: "UnAuthorized acces" });
+  }
+};
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.iesbwy6.mongodb.net/?appName=Cluster0`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -45,7 +65,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/course/:id", async (req, res) => {
+    app.get("/course/:id", verifyForebaseToken, async (req, res) => {
       const { id } = req.params;
       const query = { _id: new ObjectId(id) };
       const result = await allCourseCollection.findOne(query);
@@ -53,7 +73,7 @@ async function run() {
       console.log(id);
       res.send(result);
     });
-    app.get("/courses", async (req, res) => {
+    app.get("/courses", verifyForebaseToken, async (req, res) => {
       const email = req.query.email;
       let query = {};
 
@@ -103,8 +123,16 @@ async function run() {
       const result = await enrolledCollection.insertOne(data);
       res.send(result);
     });
-    app.get("/my-enroll", async (req, res) => {
-      const result = await enrolledCollection.find().toArray();
+    app.get("/my-enroll", verifyForebaseToken,async (req, res) => {
+      const email = req.query.email;
+      let query = {};
+
+      if (email) {
+        query = { email: email };
+      }
+
+      const cursor = enrolledCollection.find(query);
+      const result = await cursor.toArray();
       res.send(result);
     });
 
