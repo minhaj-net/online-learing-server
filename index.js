@@ -97,16 +97,38 @@ async function run() {
     });
 
     //Enroll courses here
-    app.post("/my-enroll", async (req, res) => {
-      const data = req.body;
-      console.log(data);
-      const result = await enrolledCollection.insertOne(data);
-      res.send(result);
-    });
-    app.get("/my-enroll", async (req, res) => {
-      const result = await enrolledCollection.find().toArray();
-      res.send(result);
-    });
+   // ✅ POST — যখন কেউ কোনো কোর্সে enroll করবে
+app.post("/my-enroll", async (req, res) => {
+  try {
+    const data = req.body;
+    console.log(data);
+    const result = await enrolledCollection.insertOne(data);
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to enroll", error });
+  }
+});
+
+
+// ✅ GET — শুধুমাত্র নির্দিষ্ট user-এর enrolled course ফেরত দেবে
+app.get("/my-enroll", async (req, res) => {
+  try {
+    const email = req.query.email; // 🔹 frontend থেকে ?email= পাঠাবে
+
+    if (!email) {
+      return res.status(400).send({ message: "Email is required" });
+    }
+
+    const query = { userEmail: email };
+    const result = await enrolledCollection.find(query).toArray();
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to fetch enrolls", error });
+  }
+});
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
