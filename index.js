@@ -41,6 +41,7 @@ async function run() {
     app.post("/all-courses", async (req, res) => {
       const data = req.body;
       // console.log(data);
+      //code deploy korar jonno test
       const result = await allCourseCollection.insertOne(data);
       res.send(result);
     });
